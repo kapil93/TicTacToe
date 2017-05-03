@@ -1,10 +1,14 @@
-package kapil.tictactoe;
+package kapil.tictactoe.game;
 
+import android.support.annotation.IntDef;
 import android.widget.ImageView;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
+import kapil.tictactoe.R;
+import kapil.tictactoe.game.GameActivity;
 
 public class Brain {
 

@@ -1,7 +1,8 @@
-package kapil.tictactoe;
+package kapil.tictactoe.game;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.support.annotation.IntDef;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -14,8 +15,11 @@ import android.widget.Toast;
 
 import java.util.Random;
 
-public class GameActivity extends AppCompatActivity implements View.OnClickListener {
+import kapil.tictactoe.Constants;
+import kapil.tictactoe.R;
+import kapil.tictactoe.selection.SelectionActivity;
 
+public class GameActivity extends AppCompatActivity implements View.OnClickListener {
     private FloatingActionButton fab;
     private static ImageView img1, img2, img3, img4, img5, img6, img7, img8, img9, line;
     private TextView turnTitle;
@@ -69,17 +73,19 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void getValues() {
-        manualMode = MainActivity.isManualMode();
-        playerSign = MainActivity.getPlayerSign();
+        Intent intent = getIntent();
+
+        manualMode = intent.getIntExtra("GAME_MODE", 0) == Constants.MULTI_PLAYER;
+        playerSign = intent.getIntExtra("PLAYER_1_SIGN", 0);
 
         if (manualMode) {
-            player2Sign = MainActivity.getPlayer2Sign();
+            player2Sign = intent.getIntExtra("PLAYER_2_SIGN", 0);
             computerSign = 0;
         } else {
-            computerSign = MainActivity.getPlayer2Sign();
+            computerSign = intent.getIntExtra("PLAYER_2_SIGN", 0);
         }
 
-        turn = MainActivity.getFirstTurn();
+        turn = intent.getIntExtra("FIRST_TURN", 0);
     }
 
     private void initializeBoard() {
@@ -307,12 +313,6 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
             }
             img9.setClickable(false);
         }
-    }
-
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        startActivity(new Intent(getApplicationContext(), MainActivity.class));
     }
 
     public static int getComputerSign() {
