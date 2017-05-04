@@ -2,30 +2,35 @@ package kapil.tictactoe.game;
 
 import android.content.Intent;
 import android.graphics.Color;
-import android.support.annotation.IntDef;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.List;
 import java.util.Random;
 
 import kapil.tictactoe.Constants;
 import kapil.tictactoe.R;
-import kapil.tictactoe.selection.SelectionActivity;
 
-public class GameActivity extends AppCompatActivity implements View.OnClickListener {
+public class GameActivity extends AppCompatActivity implements BoardView.OnBoardClickListener {
+    private Brain brain;
+
+    private BoardView board;
     private FloatingActionButton fab;
-    private static ImageView img1, img2, img3, img4, img5, img6, img7, img8, img9, line;
-    private TextView turnTitle;
+    private TextView turnTextBox;
 
-    private static int playerSign, player2Sign, computerSign, turn, numberOfTurns;
-    private static boolean manualMode, playerWin, player2Win, computerWin;
+    private @Constants.Sign int player1Sign;
+    private @Constants.Sign int player2Sign;
+    private @Constants.Player int turn;
+    private @Constants.GameMode int gameMode;
+
+    private static int numberOfTurns;
+    private static boolean playerWin, player2Win, computerWin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,18 +43,24 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         initializeViews();
         setClickListeners();
 
+        brain = Brain.newInstance();
+
         getValues();
 
         initializeBoard();
 
-        if (turn == computerSign) {
+        if ((gameMode == Constants.SINGLE_PLAYER) && (turn == Constants.PLAYER_2)) {
             int row = randomize(), column = randomize();
-            Brain.board[row][column] = turn;
+            brain.board[row][column] = getCurrentPlayerSign();
             putSign(row, column);
             numberOfTurns++;
-            turn = (turn % 2) + 1;
-            turnTitle.setText("Your Turn");
+            toggleTurn();
+            turnTextBox.setText("Your Turn");
         }
+    }
+
+    private @Constants.Sign int getCurrentPlayerSign() {
+        return turn == Constants.PLAYER_1 ? player1Sign : player2Sign;
     }
 
     private int randomize() {
@@ -58,34 +69,23 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void initializeViews() {
+        board = (BoardView) findViewById(R.id.board);
         fab = (FloatingActionButton) findViewById(R.id.fab);
-        turnTitle = (TextView) findViewById(R.id.turn);
-        line = (ImageView) findViewById(R.id.line);
-        img1 = (ImageView) findViewById(R.id.img1);
-        img2 = (ImageView) findViewById(R.id.img2);
-        img3 = (ImageView) findViewById(R.id.img3);
-        img4 = (ImageView) findViewById(R.id.img4);
-        img5 = (ImageView) findViewById(R.id.img5);
-        img6 = (ImageView) findViewById(R.id.img6);
-        img7 = (ImageView) findViewById(R.id.img7);
-        img8 = (ImageView) findViewById(R.id.img8);
-        img9 = (ImageView) findViewById(R.id.img9);
+        turnTextBox = (TextView) findViewById(R.id.turn_text_box);
     }
 
+    @SuppressWarnings("WrongConstant")
     private void getValues() {
         Intent intent = getIntent();
 
-        manualMode = intent.getIntExtra("GAME_MODE", 0) == Constants.MULTI_PLAYER;
-        playerSign = intent.getIntExtra("PLAYER_1_SIGN", 0);
+        gameMode = intent.getIntExtra("GAME_MODE", Constants.MULTI_PLAYER);
+        player1Sign = intent.getIntExtra("PLAYER_1_SIGN", Constants.CIRCLE);
+        player2Sign = intent.getIntExtra("PLAYER_2_SIGN", Constants.CROSS);
+        turn = intent.getIntExtra("FIRST_TURN", Constants.PLAYER_1);
 
-        if (manualMode) {
-            player2Sign = intent.getIntExtra("PLAYER_2_SIGN", 0);
-            computerSign = 0;
-        } else {
-            computerSign = intent.getIntExtra("PLAYER_2_SIGN", 0);
+        if (gameMode == Constants.SINGLE_PLAYER) {
+            brain.setComputerSign(player2Sign);
         }
-
-        turn = intent.getIntExtra("FIRST_TURN", 0);
     }
 
     private void initializeBoard() {
@@ -93,234 +93,126 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
 
         numberOfTurns = 0;
 
-        if (manualMode) {
-            turnTitle.setText("Player 1 Turn");
-        } else {
-            turnTitle.setText("Your Turn");
+        switch (gameMode) {
+            case Constants.SINGLE_PLAYER:
+                turnTextBox.setText("Your Turn");
+                break;
+            case Constants.MULTI_PLAYER:
+                turnTextBox.setText("Player 1 Turn");
+                break;
         }
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                Brain.board[i][j] = 0;
-            }
-        }
-    }
 
-    @Override
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-
-        Snackbar snackbar = Snackbar.make(findViewById(R.id.fab), "Board Reset", Snackbar.LENGTH_SHORT);
-        TextView sbText = (TextView) snackbar.getView().findViewById(R.id.snackbar_text);
-        sbText.setTextColor(Color.parseColor("#d47e00"));
-        snackbar.show();
+        brain.reset();
     }
 
     private void setClickListeners() {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                recreate();
+                board.resetBoard();
+
+                //noinspection WrongConstant
+                turn = getIntent().getIntExtra("FIRST_TURN", Constants.PLAYER_1);
+
+                initializeBoard();
+
+                if ((gameMode == Constants.SINGLE_PLAYER) && (turn == Constants.PLAYER_2)) {
+                    int row = randomize(), column = randomize();
+                    brain.board[row][column] = getCurrentPlayerSign();
+                    putSign(row, column);
+                    numberOfTurns++;
+                    toggleTurn();
+                    turnTextBox.setText("Your Turn");
+                }
+
+                Snackbar snackbar = Snackbar.make(findViewById(R.id.fab), "Board Reset", Snackbar.LENGTH_SHORT);
+                TextView sbText = (TextView) snackbar.getView().findViewById(R.id.snackbar_text);
+                sbText.setTextColor(Color.parseColor("#d47e00"));
+                snackbar.show();
             }
         });
-        img1.setOnClickListener(this);
-        img2.setOnClickListener(this);
-        img3.setOnClickListener(this);
-        img4.setOnClickListener(this);
-        img5.setOnClickListener(this);
-        img6.setOnClickListener(this);
-        img7.setOnClickListener(this);
-        img8.setOnClickListener(this);
-        img9.setOnClickListener(this);
+
+        board.setOnBoardClickListener(this);
     }
 
-    private void unSetClickListeners() {
-        img1.setClickable(false);
-        img2.setClickable(false);
-        img3.setClickable(false);
-        img4.setClickable(false);
-        img5.setClickable(false);
-        img6.setClickable(false);
-        img7.setClickable(false);
-        img8.setClickable(false);
-        img9.setClickable(false);
+    public void putSign(int row, int column) {
+        board.addSignToBoard(getCurrentPlayerSign(), row, column);
     }
 
     @Override
-    public void onClick(View view) {
+    public void onBoardClick(BoardView board, int row, int column) {
+        List<SignData> signDataList = board.getSignDataList();
+
+        for (int i = 0; i < signDataList.size(); i++) {
+            SignData signData = signDataList.get(i);
+
+            if ((signData.getRow() == row) && (signData.getColumn() == column)) {
+                return;
+            }
+        }
+
         numberOfTurns++;
 
-        if (manualMode) {
-            if (turn == player2Sign) {
-                turnTitle.setText("Player 1 Turn");
-            } else {
-                turnTitle.setText("Player 2 Turn");
+        if (gameMode == Constants.MULTI_PLAYER) {
+            switch (turn) {
+                case Constants.PLAYER_1:
+                    turnTextBox.setText("Player 2 Turn");
+                    break;
+                case Constants.PLAYER_2:
+                    turnTextBox.setText("Player 1 Turn");
+                    break;
             }
         }
 
-        switch (view.getId()) {
-            case R.id.img1:
-                putSign(0, 0);
-                Brain.board[0][0] = turn;
-                break;
+        putSign(row, column);
+        brain.board[row][column] = getCurrentPlayerSign();
 
-            case R.id.img2:
-                putSign(0, 1);
-                Brain.board[0][1] = turn;
-                break;
+        switch (gameMode) {
+            case Constants.SINGLE_PLAYER:
+                toggleTurn();
 
-            case R.id.img3:
-                putSign(0, 2);
-                Brain.board[0][2] = turn;
-                break;
+                brain.play(getCurrentPlayerSign(), numberOfTurns);
 
-            case R.id.img4:
-                putSign(1, 0);
-                Brain.board[1][0] = turn;
-                break;
+                brain.board[brain.coord[0]][brain.coord[1]] = getCurrentPlayerSign();
+                putSign(brain.coord[0], brain.coord[1]);
+                numberOfTurns++;
+                turnTextBox.setText("Your Turn");
 
-            case R.id.img5:
-                putSign(1, 1);
-                Brain.board[1][1] = turn;
-                break;
-
-            case R.id.img6:
-                putSign(1, 2);
-                Brain.board[1][2] = turn;
-                break;
-
-            case R.id.img7:
-                putSign(2, 0);
-                Brain.board[2][0] = turn;
-                break;
-
-            case R.id.img8:
-                putSign(2, 1);
-                Brain.board[2][1] = turn;
-                break;
-
-            case R.id.img9:
-                putSign(2, 2);
-                Brain.board[2][2] = turn;
-                break;
-        }
-
-        if (manualMode) {
-            boolean isWin = Brain.isWin(turn, true);
-
-            if (isWin) {
-                unSetClickListeners();
-
-                if (turn == playerSign) {
-                    playerWin = true;
-                    turnTitle.setText("");
-                    Toast.makeText(GameActivity.this, "Player 1 Wins", Toast.LENGTH_SHORT).show();
-                } else if (turn == player2Sign) {
-                    player2Win = true;
-                    turnTitle.setText("");
-                    Toast.makeText(GameActivity.this, "Player 2 Wins", Toast.LENGTH_SHORT).show();
+                if (brain.isWin(getCurrentPlayerSign(), true)) {
+                    computerWin = true;
+                    turnTextBox.setText("");
+                    Toast.makeText(GameActivity.this, "Computer Wins", Toast.LENGTH_SHORT).show();
                 }
-            }
+                break;
+            case Constants.MULTI_PLAYER:
+                boolean isWin = brain.isWin(getCurrentPlayerSign(), true);
 
-        } else {
-            turn = (turn % 2) + 1;
-
-            Brain.play(turn, numberOfTurns);
-
-            Brain.board[Brain.coord[0]][Brain.coord[1]] = turn;
-            putSign(Brain.coord[0], Brain.coord[1]);
-            numberOfTurns++;
-            turnTitle.setText("Your Turn");
-
-            if (Brain.isWin(turn, true)) {
-                unSetClickListeners();
-                computerWin = true;
-                turnTitle.setText("");
-                Toast.makeText(GameActivity.this, "Computer Wins", Toast.LENGTH_SHORT).show();
-            }
+                if (isWin) {
+                    switch (turn) {
+                        case Constants.PLAYER_1:
+                            playerWin = true;
+                            turnTextBox.setText("");
+                            Toast.makeText(GameActivity.this, "Player 1 Wins", Toast.LENGTH_SHORT).show();
+                            break;
+                        case Constants.PLAYER_2:
+                            player2Win = true;
+                            turnTextBox.setText("");
+                            Toast.makeText(GameActivity.this, "Player 2 Wins", Toast.LENGTH_SHORT).show();
+                            break;
+                    }
+                }
+                break;
         }
 
         if ((!(playerWin || player2Win || computerWin)) && (numberOfTurns >= 9)) {
             Toast.makeText(GameActivity.this, "Draw", Toast.LENGTH_SHORT).show();
-            turnTitle.setText("");
+            turnTextBox.setText("");
         }
 
-        turn = (turn % 2) + 1;
+        toggleTurn();
     }
 
-    public static void putSign(int r, int c) {
-
-        if ((r == 0) && (c == 0)) {
-            if (turn == 1) {
-                img1.setImageResource(R.drawable.circle);
-            } else {
-                img1.setImageResource(R.drawable.cross);
-            }
-            img1.setClickable(false);
-        } else if ((r == 0) && (c == 1)) {
-            if (turn == 1) {
-                img2.setImageResource(R.drawable.circle);
-            } else {
-                img2.setImageResource(R.drawable.cross);
-            }
-            img2.setClickable(false);
-        } else if ((r == 0) && (c == 2)) {
-            if (turn == 1) {
-                img3.setImageResource(R.drawable.circle);
-            } else {
-                img3.setImageResource(R.drawable.cross);
-            }
-            img3.setClickable(false);
-        } else if ((r == 1) && (c == 0)) {
-            if (turn == 1) {
-                img4.setImageResource(R.drawable.circle);
-            } else {
-                img4.setImageResource(R.drawable.cross);
-            }
-            img4.setClickable(false);
-        } else if ((r == 1) && (c == 1)) {
-            if (turn == 1) {
-                img5.setImageResource(R.drawable.circle);
-            } else {
-                img5.setImageResource(R.drawable.cross);
-            }
-            img5.setClickable(false);
-        } else if ((r == 1) && (c == 2)) {
-            if (turn == 1) {
-                img6.setImageResource(R.drawable.circle);
-            } else {
-                img6.setImageResource(R.drawable.cross);
-            }
-            img6.setClickable(false);
-        } else if ((r == 2) && (c == 0)) {
-            if (turn == 1) {
-                img7.setImageResource(R.drawable.circle);
-            } else {
-                img7.setImageResource(R.drawable.cross);
-            }
-            img7.setClickable(false);
-        } else if ((r == 2) && (c == 1)) {
-            if (turn == 1) {
-                img8.setImageResource(R.drawable.circle);
-            } else {
-                img8.setImageResource(R.drawable.cross);
-            }
-            img8.setClickable(false);
-        } else if ((r == 2) && (c == 2)) {
-            if (turn == 1) {
-                img9.setImageResource(R.drawable.circle);
-            } else {
-                img9.setImageResource(R.drawable.cross);
-            }
-            img9.setClickable(false);
-        }
+    private void toggleTurn() {
+        turn = turn == Constants.PLAYER_1 ? Constants.PLAYER_2 : Constants.PLAYER_1;
     }
-
-    public static int getComputerSign() {
-        return computerSign;
-    }
-
-    public static ImageView getLine() {
-        return line;
-    }
-
 }

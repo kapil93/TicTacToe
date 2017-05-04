@@ -17,7 +17,7 @@ public class SelectionActivity extends AppCompatActivity implements SelectionFra
 
     private @Constants.Sign int player1Sign;
     private @Constants.Sign int player2Sign;
-    private @Constants.Sign int firstTurn;
+    private @Constants.Player int firstTurn;
     private @Constants.GameMode int gameMode;
 
     private boolean backFromGameActivity;
@@ -99,21 +99,24 @@ public class SelectionActivity extends AppCompatActivity implements SelectionFra
                     break;
             }
 
-            if (gameMode == Constants.MULTI_PLAYER) {
-                firstTurn = player1Sign;
-                startGameActivity();
-            } else {
-                replaceFragment(turnSelectionFragment);
+            switch (gameMode) {
+                case Constants.SINGLE_PLAYER:
+                    replaceFragment(turnSelectionFragment);
+                    break;
+                case Constants.MULTI_PLAYER:
+                    firstTurn = Constants.PLAYER_1;
+                    startGameActivity();
+                    break;
             }
 
         } else if (fragment == turnSelectionFragment) {
 
             switch (buttonType) {
                 case SelectionFragment.TOP_BUTTON:
-                    firstTurn = player1Sign;
+                    firstTurn = Constants.PLAYER_1;
                     break;
                 case SelectionFragment.BOTTOM_BUTTON:
-                    firstTurn = player2Sign;
+                    firstTurn = Constants.PLAYER_2;
                     break;
             }
 

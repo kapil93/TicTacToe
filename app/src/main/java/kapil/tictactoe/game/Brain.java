@@ -1,25 +1,35 @@
 package kapil.tictactoe.game;
 
-import android.support.annotation.IntDef;
-import android.widget.ImageView;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import kapil.tictactoe.R;
-import kapil.tictactoe.game.GameActivity;
+import kapil.tictactoe.Constants;
 
-public class Brain {
+class Brain {
+    private static Brain INSTANCE;
 
-    public static int[][] board = new int[3][3];
-    public static int[] coord = new int[2];
+    private Brain() {
 
-    public static int play(int turn, int depth) {
+    }
 
-        if (isWin(GameActivity.getComputerSign(), false)) {
+    static Brain newInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = new Brain();
+        }
+        return INSTANCE;
+    }
+
+    int[][] board = new int[3][3];
+    int[] coord = new int[2];
+
+    @Constants.Sign int computerSign;
+
+    int play(int sign, int depth) {
+
+        if (isWin(computerSign, false)) {
             return 10 - depth;
-        } else if (isWin((GameActivity.getComputerSign() % 2) + 1, false)) {
+        } else if (isWin((computerSign % 2) + 1, false)) {
             return depth - 10;
         }
 
@@ -32,8 +42,8 @@ public class Brain {
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 if (board[i][j] == 0) {
-                    board[i][j] = turn;
-                    scores.add(play((turn % 2) + 1, depth + 1));
+                    board[i][j] = sign;
+                    scores.add(play((sign % 2) + 1, depth + 1));
                     xCoords.add(i);
                     yCoords.add(j);
                     board[i][j] = 0;
@@ -41,7 +51,7 @@ public class Brain {
             }
         }
 
-        if (turn == GameActivity.getComputerSign()) {
+        if (sign == computerSign) {
             int maxScore = -100;
             for (int i = 0; i < scores.size(); i++) {
                 if (scores.get(i) > maxScore) {
@@ -50,7 +60,7 @@ public class Brain {
             }
             return randomizeScore(maxScore, scores, xCoords, yCoords);
 
-        } else if (turn != GameActivity.getComputerSign()) {
+        } else if (sign != computerSign) {
             int minScore = 100;
             for (int i = 0; i < scores.size(); i++) {
                 if (scores.get(i) < minScore) {
@@ -63,7 +73,7 @@ public class Brain {
         return 0;
     }
 
-    private static int randomizeScore(int score, List<Integer> scores, List<Integer> xCoords, List<Integer> yCoords) {
+    private int randomizeScore(int score, List<Integer> scores, List<Integer> xCoords, List<Integer> yCoords) {
         List<Integer> equalScoreIndices = new ArrayList<>();
 
         for (int i = 0; i < scores.size(); i++) {
@@ -81,7 +91,7 @@ public class Brain {
         return score;
     }
 
-    public static Boolean isWin(int turn, boolean flag) {
+    Boolean isWin(int turn, boolean flag) {
         int[] winSeq = new int[3], row = new int[3], col = new int[3], diag1 = new int[3], diag2 = new int[3];
 
         for (int i = 0; i < 3; i++) {
@@ -140,7 +150,7 @@ public class Brain {
     }
 
     private static void putLine(int direction, int index) {
-        ImageView line = GameActivity.getLine();
+        /*ImageView line = GameActivity.getLine();
         if ((direction == 0) && (index == 0)) {
             line.setBackgroundResource(R.drawable.row1);
         } else if ((direction == 0) && (index == 1)) {
@@ -157,6 +167,19 @@ public class Brain {
             line.setBackgroundResource(R.drawable.diag1);
         } else if ((direction == 2) && (index == 1)) {
             line.setBackgroundResource(R.drawable.diag2);
+        }*/
+    }
+
+    void reset() {
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                board[i][j] = 0;
+            }
         }
+        coord[0] = coord[1] = 0;
+    }
+
+    void setComputerSign(int computerSign) {
+        this.computerSign = computerSign;
     }
 }
