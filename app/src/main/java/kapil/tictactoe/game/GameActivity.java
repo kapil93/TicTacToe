@@ -1,36 +1,33 @@
 package kapil.tictactoe.game;
 
+import android.annotation.TargetApi;
 import android.content.Intent;
-import android.graphics.Color;
+import android.os.Build;
+import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.List;
 import java.util.Random;
 
 import kapil.tictactoe.Constants;
 import kapil.tictactoe.R;
 
-public class GameActivity extends AppCompatActivity implements BoardView.OnBoardClickListener {
+public class GameActivity extends AppCompatActivity implements BoardView.OnBoardClickListener, Brain.OnProcessCompleteListener, View.OnClickListener {
     private Brain brain;
 
     private BoardView board;
-    private FloatingActionButton fab;
+    private FloatingActionButton resetButton;
     private TextView turnTextBox;
 
     private @Constants.Sign int player1Sign;
     private @Constants.Sign int player2Sign;
     private @Constants.Player int turn;
     private @Constants.GameMode int gameMode;
-
-    private int numberOfTurns;
-    private boolean playerWin, player2Win, computerWin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,40 +41,21 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
         setClickListeners();
 
         brain = Brain.getInstance();
+        brain.setOnProcessCompleteListener(this);
 
         getValues();
-
-        initializeBoard();
-
+        setGameScreen();
         makeFirstMove();
     }
 
     private void initializeViews() {
         board = (BoardView) findViewById(R.id.board);
-        fab = (FloatingActionButton) findViewById(R.id.fab);
+        resetButton = (FloatingActionButton) findViewById(R.id.reset_button);
         turnTextBox = (TextView) findViewById(R.id.turn_text_box);
     }
 
     private void setClickListeners() {
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                board.resetBoard();
-
-                //noinspection WrongConstant
-                turn = getIntent().getIntExtra("FIRST_TURN", Constants.PLAYER_1);
-
-                initializeBoard();
-
-                makeFirstMove();
-
-                Snackbar snackbar = Snackbar.make(findViewById(R.id.fab), "Board Reset", Snackbar.LENGTH_SHORT);
-                TextView sbText = (TextView) snackbar.getView().findViewById(R.id.snackbar_text);
-                sbText.setTextColor(Color.parseColor("#d47e00"));
-                snackbar.show();
-            }
-        });
-
+        resetButton.setOnClickListener(this);
         board.setOnBoardClickListener(this);
     }
 
@@ -89,37 +67,28 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
         player1Sign = intent.getIntExtra("PLAYER_1_SIGN", Constants.CIRCLE);
         player2Sign = intent.getIntExtra("PLAYER_2_SIGN", Constants.CROSS);
         turn = intent.getIntExtra("FIRST_TURN", Constants.PLAYER_1);
-
-        if (gameMode == Constants.SINGLE_PLAYER) {
-            brain.setComputerSign(player2Sign);
-        }
     }
 
-    private void initializeBoard() {
-        playerWin = player2Win = computerWin = false;
-
-        numberOfTurns = 0;
-
+    private void setGameScreen() {
         switch (gameMode) {
             case Constants.SINGLE_PLAYER:
-                turnTextBox.setText("Your Turn");
+                brain.setComputerSign(player2Sign);
+                turnTextBox.setText(R.string.player_turn_prompt);
                 break;
             case Constants.MULTI_PLAYER:
-                turnTextBox.setText("Player 1 Turn");
+                turnTextBox.setText(R.string.player_1_turn_prompt);
                 break;
         }
-
         brain.reset();
+        board.resetBoard();
     }
 
     private void makeFirstMove() {
         if ((gameMode == Constants.SINGLE_PLAYER) && (turn == Constants.PLAYER_2)) {
             int row = randomize(), column = randomize();
-            brain.updateBoard(getCurrentPlayerSign(), row, column);
-            putSign(row, column);
-            numberOfTurns++;
+            putSign(getCurrentPlayerSign(), row, column);
             toggleTurn();
-            turnTextBox.setText("Your Turn");
+            turnTextBox.setText(R.string.player_turn_prompt);
         }
     }
 
@@ -128,96 +97,119 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
         return rand.nextInt(3);
     }
 
-    private @Constants.Sign int getCurrentPlayerSign() {
-        return turn == Constants.PLAYER_1 ? player1Sign : player2Sign;
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.reset_button:
+                board.setOnBoardClickListener(GameActivity.this);
+
+                //noinspection WrongConstant
+                turn = getIntent().getIntExtra("FIRST_TURN", Constants.PLAYER_1);
+
+                setGameScreen();
+                makeFirstMove();
+                showBoardResetSnackBar();
+                break;
+        }
     }
 
-    public void putSign(int row, int column) {
-        board.addSignToBoard(getCurrentPlayerSign(), row, column);
+    @TargetApi(Build.VERSION_CODES.M)
+    private void showBoardResetSnackBar() {
+        Snackbar snackbar = Snackbar.make(findViewById(R.id.reset_button), "Board Reset", Snackbar.LENGTH_SHORT);
+        TextView sbText = (TextView) snackbar.getView().findViewById(R.id.snackbar_text);
+        sbText.setTextColor(getResources().getColor(R.color.holo_orange_dark, null));
+        snackbar.show();
     }
 
     @Override
     public void onBoardClick(BoardView board, int row, int column) {
-        if (isAlreadyClicked(row, column)) {
+        if (board.isAlreadyClicked(row, column)) {
             return;
         }
 
-        numberOfTurns++;
-
-        if (gameMode == Constants.MULTI_PLAYER) {
-            switch (turn) {
-                case Constants.PLAYER_1:
-                    turnTextBox.setText("Player 2 Turn");
-                    break;
-                case Constants.PLAYER_2:
-                    turnTextBox.setText("Player 1 Turn");
-                    break;
-            }
-        }
-
-        putSign(row, column);
-        brain.updateBoard(getCurrentPlayerSign(), row, column);
+        putSign(getCurrentPlayerSign(), row, column);
 
         switch (gameMode) {
             case Constants.SINGLE_PLAYER:
+
                 toggleTurn();
 
-                brain.play(getCurrentPlayerSign(), numberOfTurns);
+                brain.play(getCurrentPlayerSign());
 
-                brain.updateBoard(getCurrentPlayerSign(), brain.coord[0], brain.coord[1]);
-                putSign(brain.coord[0], brain.coord[1]);
-                numberOfTurns++;
-                turnTextBox.setText("Your Turn");
-
-                if (brain.isWin(getCurrentPlayerSign(), true)) {
-                    computerWin = true;
-                    turnTextBox.setText("");
-                    Toast.makeText(GameActivity.this, "Computer Wins", Toast.LENGTH_SHORT).show();
-                }
                 break;
+
             case Constants.MULTI_PLAYER:
-                boolean isWin = brain.isWin(getCurrentPlayerSign(), true);
 
-                if (isWin) {
-                    switch (turn) {
-                        case Constants.PLAYER_1:
-                            playerWin = true;
-                            turnTextBox.setText("");
-                            Toast.makeText(GameActivity.this, "Player 1 Wins", Toast.LENGTH_SHORT).show();
-                            break;
-                        case Constants.PLAYER_2:
-                            player2Win = true;
-                            turnTextBox.setText("");
-                            Toast.makeText(GameActivity.this, "Player 2 Wins", Toast.LENGTH_SHORT).show();
-                            break;
-                    }
+                switch (turn) {
+                    case Constants.PLAYER_1:
+                        turnTextBox.setText(R.string.player_2_turn_prompt);
+                        break;
+                    case Constants.PLAYER_2:
+                        turnTextBox.setText(R.string.player_1_turn_prompt);
+                        break;
                 }
+
+                toggleTurn();
+
                 break;
         }
 
-        if ((!(playerWin || player2Win || computerWin)) && (numberOfTurns >= 9)) {
-            Toast.makeText(GameActivity.this, "Draw", Toast.LENGTH_SHORT).show();
-            turnTextBox.setText("");
-        }
-
-        toggleTurn();
+        brain.analyzeBoard();
     }
 
-    private boolean isAlreadyClicked(int row, int column) {
-        List<SignData> signDataList = board.getSignDataList();
+    private @Constants.Sign int getCurrentPlayerSign() {
+        return turn == Constants.PLAYER_1 ? player1Sign : player2Sign;
+    }
 
-        for (int i = 0; i < signDataList.size(); i++) {
-            SignData signData = signDataList.get(i);
-
-            if ((signData.getRow() == row) && (signData.getColumn() == column)) {
-                return true;
-            }
-        }
-
-        return false;
+    public void putSign(@Constants.Sign int sign, int row, int column) {
+        brain.updateBoard(sign, row, column);
+        board.addSignToBoard(sign, row, column);
     }
 
     private void toggleTurn() {
         turn = turn == Constants.PLAYER_1 ? Constants.PLAYER_2 : Constants.PLAYER_1;
+    }
+
+    @Override
+    public void onNextMoveCalculated(int row, int column) {
+        putSign(player2Sign, row, column);
+        turnTextBox.setText(R.string.player_turn_prompt);
+        toggleTurn();
+    }
+
+    @Override
+    public void onGameWin(@Constants.Sign int sign, @Constants.WinLinePosition int winLinePosition) {
+        board.setWinLinePosition(winLinePosition);
+
+        turnTextBox.setText("");
+
+        if (sign == player1Sign) {
+            Toast.makeText(GameActivity.this, "Player 1 Wins", Toast.LENGTH_SHORT).show();
+        } else if (sign == player2Sign) {
+            switch (gameMode) {
+                case Constants.SINGLE_PLAYER:
+                    Toast.makeText(GameActivity.this, "Computer Wins", Toast.LENGTH_SHORT).show();
+                    break;
+                case Constants.MULTI_PLAYER:
+                    Toast.makeText(GameActivity.this, "Player 2 Wins", Toast.LENGTH_SHORT).show();
+                    break;
+            }
+        }
+
+        board.setOnBoardClickListener(null);
+    }
+
+    @Override
+    public void onGameDraw() {
+        turnTextBox.setText("");
+        Toast.makeText(GameActivity.this, "Draw", Toast.LENGTH_SHORT).show();
+        board.setOnBoardClickListener(null);
+    }
+
+    @Override
+    protected void onDestroy() {
+        brain.destroy();
+        brain = null;
+        super.onDestroy();
     }
 }

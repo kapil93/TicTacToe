@@ -1,9 +1,11 @@
 package kapil.tictactoe.game;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PointF;
+import android.os.Build;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.TypedValue;
@@ -53,6 +55,7 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
         init();
     }
 
+    @TargetApi(Build.VERSION_CODES.M)
     private void init() {
         gridLinePoints = new float[16];
 
@@ -68,20 +71,20 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
         winLinePosition = Constants.NONE;
 
         gridPaint = new Paint();
-        gridPaint.setColor(getContext().getResources().getColor(R.color.holo_green_dark));
+        gridPaint.setColor(getContext().getResources().getColor(R.color.holo_green_dark, null));
         gridPaint.setAntiAlias(true);
         gridPaint.setStrokeWidth(dpToPx(STROKE_WIDTH));
         gridPaint.setStrokeCap(Paint.Cap.ROUND);
 
         signPaint = new Paint();
-        signPaint.setColor(getContext().getResources().getColor(R.color.holo_orange_dark));
+        signPaint.setColor(getContext().getResources().getColor(R.color.holo_orange_dark, null));
         signPaint.setAntiAlias(true);
         signPaint.setStyle(Paint.Style.STROKE);
         signPaint.setStrokeWidth(dpToPx(STROKE_WIDTH));
         signPaint.setStrokeCap(Paint.Cap.ROUND);
 
         winLinePaint = new Paint();
-        winLinePaint.setColor(getContext().getResources().getColor(R.color.holo_red_dark));
+        winLinePaint.setColor(getContext().getResources().getColor(R.color.holo_red_dark, null));
         winLinePaint.setAntiAlias(true);
         winLinePaint.setStrokeWidth(dpToPx(STROKE_WIDTH));
         winLinePaint.setStrokeCap(Paint.Cap.ROUND);
@@ -153,6 +156,8 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
                 case Constants.CROSS:
                     drawCross(canvas, centerPoints[signData.getRow()][signData.getColumn()]);
                     break;
+                case Constants.EMPTY:
+                    break;
             }
         }
     }
@@ -220,8 +225,16 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
         invalidate();
     }
 
-    public List<SignData> getSignDataList() {
-        return signDataList;
+    boolean isAlreadyClicked(int row, int column) {
+        for (int i = 0; i < signDataList.size(); i++) {
+            SignData signData = signDataList.get(i);
+
+            if ((signData.getRow() == row) && (signData.getColumn() == column)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void setWinLinePosition(@Constants.WinLinePosition int winLinePosition) {
@@ -292,5 +305,35 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
 
     interface OnBoardClickListener {
         void onBoardClick(BoardView board, int row, int column);
+    }
+
+    private class SignData {
+        private @Constants.Sign int sign;
+        private int row;
+        private int column;
+
+        @Constants.Sign int getSign() {
+            return sign;
+        }
+
+        void setSign(@Constants.Sign int sign) {
+            this.sign = sign;
+        }
+
+        int getRow() {
+            return row;
+        }
+
+        void setRow(int row) {
+            this.row = row;
+        }
+
+        int getColumn() {
+            return column;
+        }
+
+        void setColumn(int column) {
+            this.column = column;
+        }
     }
 }

@@ -1,5 +1,7 @@
 package kapil.tictactoe.game;
 
+import android.support.annotation.IntDef;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -10,9 +12,32 @@ class Brain {
     private static Brain INSTANCE;
 
     private int[][] board = new int[3][3];
-    int[] coord = new int[2];
 
-    @Constants.Sign int computerSign;
+    private int rowOfResult;
+    private int columnOfResult;
+
+    private int depth;
+
+    private @Constants.Sign int computerSign;
+    private @Constants.Sign int playerSign;
+
+    private OnProcessCompleteListener onProcessCompleteListener;
+
+    private static final int HORIZONTAL = 0;
+    private static final int VERTICAL = 1;
+    private static final int DIAGONAL = 2;
+
+    @IntDef({HORIZONTAL, VERTICAL, DIAGONAL})
+    @interface DirectionOfWinLine {
+
+    }
+
+    // References used by isWin function.
+    private int[] winSequence = new int[3];
+    private int[] row = new int[3];
+    private int[] column = new int[3];
+    private int[] diagonal1 = new int[3];
+    private int[] diagonal2 = new int[3];
 
     private Brain() {
 
@@ -25,11 +50,21 @@ class Brain {
         return INSTANCE;
     }
 
-    int play(int sign, int depth) {
+    void play(@Constants.Sign int sign) {
+        if (onProcessCompleteListener == null) {
+            return;
+        }
+
+        calculateNextMove(sign, depth);
+
+        onProcessCompleteListener.onNextMoveCalculated(rowOfResult, columnOfResult);
+    }
+
+    private int calculateNextMove(@Constants.Sign int sign, int depth) {
 
         if (isWin(computerSign, false)) {
             return 10 - depth;
-        } else if (isWin((computerSign % 2) + 1, false)) {
+        } else if (isWin(playerSign, false)) {
             return depth - 10;
         }
 
@@ -37,15 +72,15 @@ class Brain {
             return 0;
         }
 
-        List<Integer> scores = new ArrayList<>(), xCoords = new ArrayList<>(), yCoords = new ArrayList<>();
+        List<Integer> scores = new ArrayList<>(), rowIndices = new ArrayList<>(), columnIndices = new ArrayList<>();
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 if (board[i][j] == 0) {
                     board[i][j] = sign;
-                    scores.add(play((sign % 2) + 1, depth + 1));
-                    xCoords.add(i);
-                    yCoords.add(j);
+                    scores.add(calculateNextMove(getOppositeSign(sign), depth + 1));
+                    rowIndices.add(i);
+                    columnIndices.add(j);
                     board[i][j] = 0;
                 }
             }
@@ -58,7 +93,7 @@ class Brain {
                     maxScore = scores.get(i);
                 }
             }
-            return randomizeScore(maxScore, scores, xCoords, yCoords);
+            return randomizeScore(maxScore, scores, rowIndices, columnIndices);
 
         } else {
             int minScore = 100;
@@ -67,11 +102,11 @@ class Brain {
                     minScore = scores.get(i);
                 }
             }
-            return randomizeScore(minScore, scores, xCoords, yCoords);
+            return randomizeScore(minScore, scores, rowIndices, columnIndices);
         }
     }
 
-    private int randomizeScore(int score, List<Integer> scores, List<Integer> xCoords, List<Integer> yCoords) {
+    private int randomizeScore(int score, List<Integer> scores, List<Integer> rowIndices, List<Integer> columnIndices) {
         List<Integer> equalScoreIndices = new ArrayList<>();
 
         for (int i = 0; i < scores.size(); i++) {
@@ -83,54 +118,52 @@ class Brain {
         Random rand = new Random();
         int randomIndex = equalScoreIndices.get(rand.nextInt(equalScoreIndices.size()));
 
-        coord[0] = xCoords.get(randomIndex);
-        coord[1] = yCoords.get(randomIndex);
+        rowOfResult = rowIndices.get(randomIndex);
+        columnOfResult = columnIndices.get(randomIndex);
 
         return score;
     }
 
-    Boolean isWin(int turn, boolean flag) {
-        int[] winSeq = new int[3], row = new int[3], col = new int[3], diag1 = new int[3], diag2 = new int[3];
-
+    private boolean isWin(@Constants.Sign int sign, boolean notifyWinEnabled) {
         for (int i = 0; i < 3; i++) {
-            winSeq[i] = turn;
+            winSequence[i] = sign;
         }
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
 
                 if (i == j) {
-                    diag1[i] = board[i][j];
+                    diagonal1[i] = board[i][j];
                 }
                 if ((i + j) == 2) {
-                    diag2[i] = board[i][j];
+                    diagonal2[i] = board[i][j];
                 }
 
                 row[j] = board[i][j];
-                col[j] = board[j][i];
+                column[j] = board[j][i];
             }
 
-            if (isEqual(row, winSeq)) {
-                if (flag) {
-                    putLine(0, i);
+            if (isEqual(row, winSequence)) {
+                if (notifyWinEnabled) {
+                    notifyWin(sign, HORIZONTAL, i + 1);
                 }
                 return true;
-            } else if (isEqual(col, winSeq)) {
-                if (flag) {
-                    putLine(1, i);
+            } else if (isEqual(column, winSequence)) {
+                if (notifyWinEnabled) {
+                    notifyWin(sign, VERTICAL, i + 1);
                 }
                 return true;
             }
         }
 
-        if (isEqual(diag1, winSeq)) {
-            if (flag) {
-                putLine(2, 0);
+        if (isEqual(diagonal1, winSequence)) {
+            if (notifyWinEnabled) {
+                notifyWin(sign, DIAGONAL, 1);
             }
             return true;
-        } else if (isEqual(diag2, winSeq)) {
-            if (flag) {
-                putLine(2, 1);
+        } else if (isEqual(diagonal2, winSequence)) {
+            if (notifyWinEnabled) {
+                notifyWin(sign, DIAGONAL, 2);
             }
             return true;
         }
@@ -147,25 +180,63 @@ class Brain {
         return true;
     }
 
-    private void putLine(int direction, int index) {
-        /*ImageView line = GameActivity.getLine();
-        if ((direction == 0) && (index == 0)) {
-            line.setBackgroundResource(R.drawable.row1);
-        } else if ((direction == 0) && (index == 1)) {
-            line.setBackgroundResource(R.drawable.row2);
-        } else if ((direction == 0) && (index == 2)) {
-            line.setBackgroundResource(R.drawable.row3);
-        } else if ((direction == 1) && (index == 0)) {
-            line.setBackgroundResource(R.drawable.col1);
-        } else if ((direction == 1) && (index == 1)) {
-            line.setBackgroundResource(R.drawable.col2);
-        } else if ((direction == 1) && (index == 2)) {
-            line.setBackgroundResource(R.drawable.col3);
-        } else if ((direction == 2) && (index == 0)) {
-            line.setBackgroundResource(R.drawable.diag1);
-        } else if ((direction == 2) && (index == 1)) {
-            line.setBackgroundResource(R.drawable.diag2);
-        }*/
+    void analyzeBoard() {
+        if (onProcessCompleteListener == null) {
+            return;
+        }
+
+        if ((!isWin(Constants.CIRCLE, true)) && (!isWin(Constants.CROSS, true)) && (depth >= 9)) {
+            onProcessCompleteListener.onGameDraw();
+        }
+    }
+
+    private void notifyWin(@Constants.Sign int sign, @DirectionOfWinLine int direction, int index) {
+        if (onProcessCompleteListener == null) {
+            return;
+        }
+
+        @Constants.WinLinePosition int winLinePosition = Constants.NONE;
+
+        switch (direction) {
+            case HORIZONTAL:
+                switch (index) {
+                    case 1:
+                        winLinePosition = Constants.ROW_1;
+                        break;
+                    case 2:
+                        winLinePosition = Constants.ROW_2;
+                        break;
+                    case 3:
+                        winLinePosition = Constants.ROW_3;
+                        break;
+                }
+                break;
+            case VERTICAL:
+                switch (index) {
+                    case 1:
+                        winLinePosition = Constants.COLUMN_1;
+                        break;
+                    case 2:
+                        winLinePosition = Constants.COLUMN_2;
+                        break;
+                    case 3:
+                        winLinePosition = Constants.COLUMN_3;
+                        break;
+                }
+                break;
+            case DIAGONAL:
+                switch (index) {
+                    case 1:
+                        winLinePosition = Constants.DIAGONAL_1;
+                        break;
+                    case 2:
+                        winLinePosition = Constants.DIAGONAL_2;
+                        break;
+                }
+                break;
+        }
+
+        onProcessCompleteListener.onGameWin(sign, winLinePosition);
     }
 
     void reset() {
@@ -174,14 +245,37 @@ class Brain {
                 board[i][j] = 0;
             }
         }
-        coord[0] = coord[1] = 0;
+        depth = 0;
     }
 
     void setComputerSign(int computerSign) {
         this.computerSign = computerSign;
+        playerSign = getOppositeSign(computerSign);
     }
 
     void updateBoard(@Constants.Sign int sign, int row, int column) {
         board[row][column] = sign;
+        depth++;
+    }
+
+    private @Constants.Sign int getOppositeSign(@Constants.Sign int sign) {
+        return sign == Constants.CIRCLE ? Constants.CROSS : Constants.CIRCLE;
+    }
+
+    void setOnProcessCompleteListener(OnProcessCompleteListener onProcessCompleteListener) {
+        this.onProcessCompleteListener = onProcessCompleteListener;
+    }
+
+    interface OnProcessCompleteListener {
+
+        void onNextMoveCalculated(int row, int column);
+
+        void onGameWin(@Constants.Sign int sign, @Constants.WinLinePosition int winLinePosition);
+
+        void onGameDraw();
+    }
+
+    void destroy() {
+        INSTANCE = null;
     }
 }

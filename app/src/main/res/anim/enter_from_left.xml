@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <set xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shareInterpolator="false">
+    android:shareInterpolator="false"
+    android:duration="250">
 
     <translate
         android:fromXDelta="-100%" android:toXDelta="0%"
-        android:fromYDelta="0%" android:toYDelta="0%"
-        android:duration="250"/>
+        android:fromYDelta="0%" android:toYDelta="0%"/>
+
+    <rotate android:pivotX="50%"
+        android:pivotY="50%"
+        android:fromDegrees="315"
+        android:toDegrees="360"/>
 
 </set>
