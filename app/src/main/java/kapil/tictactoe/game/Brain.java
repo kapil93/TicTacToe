@@ -9,21 +9,21 @@ import kapil.tictactoe.Constants;
 class Brain {
     private static Brain INSTANCE;
 
+    private int[][] board = new int[3][3];
+    int[] coord = new int[2];
+
+    @Constants.Sign int computerSign;
+
     private Brain() {
 
     }
 
-    static Brain newInstance() {
+    static Brain getInstance() {
         if (INSTANCE == null) {
             INSTANCE = new Brain();
         }
         return INSTANCE;
     }
-
-    int[][] board = new int[3][3];
-    int[] coord = new int[2];
-
-    @Constants.Sign int computerSign;
 
     int play(int sign, int depth) {
 
@@ -60,7 +60,7 @@ class Brain {
             }
             return randomizeScore(maxScore, scores, xCoords, yCoords);
 
-        } else if (sign != computerSign) {
+        } else {
             int minScore = 100;
             for (int i = 0; i < scores.size(); i++) {
                 if (scores.get(i) < minScore) {
@@ -69,8 +69,6 @@ class Brain {
             }
             return randomizeScore(minScore, scores, xCoords, yCoords);
         }
-
-        return 0;
     }
 
     private int randomizeScore(int score, List<Integer> scores, List<Integer> xCoords, List<Integer> yCoords) {
@@ -140,7 +138,7 @@ class Brain {
         return false;
     }
 
-    private static boolean isEqual(int[] x, int[] y) {
+    private boolean isEqual(int[] x, int[] y) {
         for (int i = 0; i < 3; i++) {
             if (x[i] != y[i]) {
                 return false;
@@ -149,7 +147,7 @@ class Brain {
         return true;
     }
 
-    private static void putLine(int direction, int index) {
+    private void putLine(int direction, int index) {
         /*ImageView line = GameActivity.getLine();
         if ((direction == 0) && (index == 0)) {
             line.setBackgroundResource(R.drawable.row1);
@@ -181,5 +179,9 @@ class Brain {
 
     void setComputerSign(int computerSign) {
         this.computerSign = computerSign;
+    }
+
+    void updateBoard(@Constants.Sign int sign, int row, int column) {
+        board[row][column] = sign;
     }
 }

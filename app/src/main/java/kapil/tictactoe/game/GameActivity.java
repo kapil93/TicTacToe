@@ -29,8 +29,8 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
     private @Constants.Player int turn;
     private @Constants.GameMode int gameMode;
 
-    private static int numberOfTurns;
-    private static boolean playerWin, player2Win, computerWin;
+    private int numberOfTurns;
+    private boolean playerWin, player2Win, computerWin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,35 +43,42 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
         initializeViews();
         setClickListeners();
 
-        brain = Brain.newInstance();
+        brain = Brain.getInstance();
 
         getValues();
 
         initializeBoard();
 
-        if ((gameMode == Constants.SINGLE_PLAYER) && (turn == Constants.PLAYER_2)) {
-            int row = randomize(), column = randomize();
-            brain.board[row][column] = getCurrentPlayerSign();
-            putSign(row, column);
-            numberOfTurns++;
-            toggleTurn();
-            turnTextBox.setText("Your Turn");
-        }
-    }
-
-    private @Constants.Sign int getCurrentPlayerSign() {
-        return turn == Constants.PLAYER_1 ? player1Sign : player2Sign;
-    }
-
-    private int randomize() {
-        Random rand = new Random();
-        return rand.nextInt(3);
+        makeFirstMove();
     }
 
     private void initializeViews() {
         board = (BoardView) findViewById(R.id.board);
         fab = (FloatingActionButton) findViewById(R.id.fab);
         turnTextBox = (TextView) findViewById(R.id.turn_text_box);
+    }
+
+    private void setClickListeners() {
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                board.resetBoard();
+
+                //noinspection WrongConstant
+                turn = getIntent().getIntExtra("FIRST_TURN", Constants.PLAYER_1);
+
+                initializeBoard();
+
+                makeFirstMove();
+
+                Snackbar snackbar = Snackbar.make(findViewById(R.id.fab), "Board Reset", Snackbar.LENGTH_SHORT);
+                TextView sbText = (TextView) snackbar.getView().findViewById(R.id.snackbar_text);
+                sbText.setTextColor(Color.parseColor("#d47e00"));
+                snackbar.show();
+            }
+        });
+
+        board.setOnBoardClickListener(this);
     }
 
     @SuppressWarnings("WrongConstant")
@@ -105,34 +112,24 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
         brain.reset();
     }
 
-    private void setClickListeners() {
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                board.resetBoard();
+    private void makeFirstMove() {
+        if ((gameMode == Constants.SINGLE_PLAYER) && (turn == Constants.PLAYER_2)) {
+            int row = randomize(), column = randomize();
+            brain.updateBoard(getCurrentPlayerSign(), row, column);
+            putSign(row, column);
+            numberOfTurns++;
+            toggleTurn();
+            turnTextBox.setText("Your Turn");
+        }
+    }
 
-                //noinspection WrongConstant
-                turn = getIntent().getIntExtra("FIRST_TURN", Constants.PLAYER_1);
+    private int randomize() {
+        Random rand = new Random();
+        return rand.nextInt(3);
+    }
 
-                initializeBoard();
-
-                if ((gameMode == Constants.SINGLE_PLAYER) && (turn == Constants.PLAYER_2)) {
-                    int row = randomize(), column = randomize();
-                    brain.board[row][column] = getCurrentPlayerSign();
-                    putSign(row, column);
-                    numberOfTurns++;
-                    toggleTurn();
-                    turnTextBox.setText("Your Turn");
-                }
-
-                Snackbar snackbar = Snackbar.make(findViewById(R.id.fab), "Board Reset", Snackbar.LENGTH_SHORT);
-                TextView sbText = (TextView) snackbar.getView().findViewById(R.id.snackbar_text);
-                sbText.setTextColor(Color.parseColor("#d47e00"));
-                snackbar.show();
-            }
-        });
-
-        board.setOnBoardClickListener(this);
+    private @Constants.Sign int getCurrentPlayerSign() {
+        return turn == Constants.PLAYER_1 ? player1Sign : player2Sign;
     }
 
     public void putSign(int row, int column) {
@@ -141,14 +138,8 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
 
     @Override
     public void onBoardClick(BoardView board, int row, int column) {
-        List<SignData> signDataList = board.getSignDataList();
-
-        for (int i = 0; i < signDataList.size(); i++) {
-            SignData signData = signDataList.get(i);
-
-            if ((signData.getRow() == row) && (signData.getColumn() == column)) {
-                return;
-            }
+        if (isAlreadyClicked(row, column)) {
+            return;
         }
 
         numberOfTurns++;
@@ -165,7 +156,7 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
         }
 
         putSign(row, column);
-        brain.board[row][column] = getCurrentPlayerSign();
+        brain.updateBoard(getCurrentPlayerSign(), row, column);
 
         switch (gameMode) {
             case Constants.SINGLE_PLAYER:
@@ -173,7 +164,7 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
 
                 brain.play(getCurrentPlayerSign(), numberOfTurns);
 
-                brain.board[brain.coord[0]][brain.coord[1]] = getCurrentPlayerSign();
+                brain.updateBoard(getCurrentPlayerSign(), brain.coord[0], brain.coord[1]);
                 putSign(brain.coord[0], brain.coord[1]);
                 numberOfTurns++;
                 turnTextBox.setText("Your Turn");
@@ -210,6 +201,20 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
         }
 
         toggleTurn();
+    }
+
+    private boolean isAlreadyClicked(int row, int column) {
+        List<SignData> signDataList = board.getSignDataList();
+
+        for (int i = 0; i < signDataList.size(); i++) {
+            SignData signData = signDataList.get(i);
+
+            if ((signData.getRow() == row) && (signData.getColumn() == column)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void toggleTurn() {
