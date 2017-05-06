@@ -4,10 +4,12 @@ import android.annotation.TargetApi;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -17,7 +19,7 @@ import java.util.Random;
 import kapil.tictactoe.Constants;
 import kapil.tictactoe.R;
 
-public class GameActivity extends AppCompatActivity implements BoardView.OnBoardClickListener, Brain.OnProcessCompleteListener, View.OnClickListener {
+public class GameActivity extends AppCompatActivity implements BoardView.OnBoardInteractionListener, Brain.OnProcessCompleteListener, View.OnClickListener {
     private Brain brain;
 
     private BoardView board;
@@ -56,7 +58,7 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
 
     private void setClickListeners() {
         resetButton.setOnClickListener(this);
-        board.setOnBoardClickListener(this);
+        board.setOnBoardInteractionListener(this);
     }
 
     @SuppressWarnings("WrongConstant")
@@ -80,7 +82,6 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
                 break;
         }
         brain.reset();
-        board.resetBoard();
     }
 
     private void makeFirstMove() {
@@ -101,7 +102,8 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.reset_button:
-                board.setOnBoardClickListener(GameActivity.this);
+                board.resetBoard();
+                board.setOnBoardInteractionListener(GameActivity.this);
 
                 //noinspection WrongConstant
                 turn = getIntent().getIntExtra("FIRST_TURN", Constants.PLAYER_1);
@@ -128,13 +130,19 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
         }
 
         putSign(getCurrentPlayerSign(), row, column);
+    }
 
+    @Override
+    public void onSignAdded(@Constants.Sign int sign, int row, int column) {
         switch (gameMode) {
             case Constants.SINGLE_PLAYER:
 
-                toggleTurn();
+                if (sign == player1Sign) {
 
-                brain.play(getCurrentPlayerSign());
+                    toggleTurn();
+
+                    brain.play(getCurrentPlayerSign());
+                }
 
                 break;
 
@@ -179,7 +187,7 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
 
     @Override
     public void onGameWin(@Constants.Sign int sign, @Constants.WinLinePosition int winLinePosition) {
-        board.setWinLinePosition(winLinePosition);
+        board.showWinLine(winLinePosition);
 
         turnTextBox.setText("");
 
@@ -196,14 +204,14 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
             }
         }
 
-        board.setOnBoardClickListener(null);
+        board.setOnBoardInteractionListener(null);
     }
 
     @Override
     public void onGameDraw() {
         turnTextBox.setText("");
         Toast.makeText(GameActivity.this, "Draw", Toast.LENGTH_SHORT).show();
-        board.setOnBoardClickListener(null);
+        board.setOnBoardInteractionListener(null);
     }
 
     @Override

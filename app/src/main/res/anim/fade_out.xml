@@ -6,4 +6,11 @@
     <alpha android:fromAlpha="1"
         android:toAlpha="0"/>
 
+    <scale android:pivotX="50%"
+        android:pivotY="50%"
+        android:fromXScale="100%"
+        android:fromYScale="100%"
+        android:toXScale="85%"
+        android:toYScale="85%"/>
+
 </set>
