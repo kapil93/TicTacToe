@@ -3,5 +3,8 @@
     <color name="colorPrimary">#588100</color>
     <color name="colorPrimaryDark">#356700</color>
     <color name="colorAccent">#FF4081</color>
+
     <color name="holo_green_dark">#588100</color>
+    <color name="holo_orange_dark">#ff8800</color>
+    <color name="holo_red_dark">#cc0000</color>
 </resources>

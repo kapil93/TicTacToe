@@ -1,0 +1,44 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="kapil.tictactoe.selection.SelectionFragment">
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="50dp"
+        android:text="@string/turn_selection_text"
+        android:textSize="30sp" />
+
+    <kapil.tictactoe.selection.SqueezeButton
+        android:id="@+id/top_button"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_below="@+id/title"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="75dp"
+        android:background="@drawable/user" />
+
+    <TextView
+        android:id="@+id/or"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/top_button"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="30dp"
+        android:text="@string/divider_text"
+        android:textSize="25sp" />
+
+    <kapil.tictactoe.selection.SqueezeButton
+        android:id="@+id/bottom_button"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_below="@+id/or"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="30dp"
+        android:background="@drawable/system"/>
+
+</RelativeLayout>
