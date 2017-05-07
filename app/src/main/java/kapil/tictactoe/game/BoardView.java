@@ -30,7 +30,11 @@ import kapil.tictactoe.Constants;
 import kapil.tictactoe.R;
 
 /**
+ * This is a custom view for tic tac toe board.
  *
+ * It gives callbacks for touch and has methods to add a {@link kapil.tictactoe.Constants.Sign} to
+ * board, show win line according to {@link kapil.tictactoe.Constants.WinLinePosition} and reset
+ * board all with animations.
  */
 
 public class BoardView extends View implements GestureDetector.OnGestureListener, ValueAnimator.AnimatorUpdateListener, Animator.AnimatorListener {
@@ -127,7 +131,7 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
         winLineAnimator.addListener(this);
 
         resetAnimator = new ValueAnimator();
-        resetAnimator.setDuration(1000);
+        resetAnimator.setDuration(500);
         resetAnimator.setInterpolator(new AccelerateInterpolator());
         resetAnimator.addUpdateListener(this);
         resetAnimator.addListener(this);
@@ -178,14 +182,21 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if ((onBoardInteractionListener == null) || (clickAnimator.isRunning()) || (isFlagSet())) {
+        if ((onBoardInteractionListener == null) || (clickAnimator.isRunning()) || (isAnimationFlagSet())) {
             return super.onTouchEvent(event);
         } else {
             return clickDetector.onTouchEvent(event);
         }
     }
 
-    private boolean isFlagSet() {
+    /**
+     * Checks whether {@link #signDataList} has any item with animation flag set.
+     *
+     * @return true if there is any item with animation flag set (if any animation is running),
+     *         else false.
+     */
+
+    private boolean isAnimationFlagSet() {
         for (SignData signData : signDataList) {
             if (signData.isAnimationFlag()) {
                 return true;
@@ -193,6 +204,11 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
         }
         return false;
     }
+
+    /**
+     * Sets values of end points of tic tac toe board grid lines into a float array which will be
+     * used to draw grid lines.
+     */
 
     private void setGridLinePoints() {
         int side = getMeasuredWidth();
@@ -203,6 +219,11 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
         gridLinePoints[2] = gridLinePoints[6] = gridLinePoints[11] = gridLinePoints[15] = side - padding;
         gridLinePoints[5] = gridLinePoints[7] = gridLinePoints[12] = gridLinePoints[14] = (2 * side) / 3f;
     }
+
+    /**
+     * Sets center points for drawing of {@link kapil.tictactoe.Constants.Sign} in the appropriate
+     * position of the board.
+     */
 
     private void setCenterPoints() {
         float a = getMeasuredWidth() / 6f;
@@ -215,26 +236,51 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
         }
     }
 
+    /**
+     * Sets start and end values for animators.
+     */
+
     private void setAnimationValues() {
         clickAnimator.setFloatValues(0, (getMeasuredWidth() / 6f) - dpToPx(2 * STROKE_WIDTH));
         winLineAnimator.setFloatValues(0, getMeasuredWidth());
         resetAnimator.setFloatValues(-dpToPx(SWEEPER_WIDTH), getMeasuredWidth());
     }
 
+    /**
+     * Sets a two dimensional gradient for the reset sweeper.
+     */
+
     private void setSweeperGradient() {
         float axis = sweeperStartPosition + (dpToPx(SWEEPER_WIDTH / 2f));
 
-        LinearGradient horizontalGradient = new LinearGradient(0, axis, getMeasuredWidth(), axis, sweeperColors, sweeperStops, Shader.TileMode.CLAMP);
-        LinearGradient verticalGradient = new LinearGradient(getMeasuredWidth() / 2f, sweeperStartPosition, getMeasuredWidth() / 2f, sweeperStartPosition + dpToPx(SWEEPER_WIDTH), sweeperColors, sweeperStops, Shader.TileMode.CLAMP);
+        LinearGradient horizontalGradient = new LinearGradient(0, axis, getMeasuredWidth(), axis,
+                sweeperColors, sweeperStops, Shader.TileMode.CLAMP);
+
+        LinearGradient verticalGradient = new LinearGradient(getMeasuredWidth() / 2f, sweeperStartPosition,
+                getMeasuredWidth() / 2f, sweeperStartPosition + dpToPx(SWEEPER_WIDTH), sweeperColors, sweeperStops,
+                Shader.TileMode.CLAMP);
 
         ComposeShader shader = new ComposeShader(horizontalGradient, verticalGradient, PorterDuff.Mode.MULTIPLY);
 
         sweeperPaint.setShader(shader);
     }
 
+    /**
+     * Draws grid lines on the given canvas using the coordinates stored in {@link #gridLinePoints}.
+     *
+     * @param canvas Canvas on which the grid lines will be drawn.
+     */
+
     private void drawGrid(Canvas canvas) {
         canvas.drawLines(gridLinePoints, gridPaint);
     }
+
+    /**
+     * Draws {@link kapil.tictactoe.Constants.Sign} added to the board on the given canvas in the
+     * appropriate position.
+     *
+     * @param canvas Canvas on which the signs will be drawn.
+     */
 
     private void drawSigns(Canvas canvas) {
         for (int i = 0; i < signDataList.size(); i++) {
@@ -253,18 +299,43 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
         }
     }
 
+    /**
+     * Draws circle sign on the given canvas.
+     *
+     * @param canvas        Canvas on which the circle will be drawn.
+     * @param center        Center point of circle taken from {@link #centerPoints}.
+     * @param animationFlag Method takes the animated value for circle radius if set true, else
+     *                      takes default value.
+     */
+
     private void drawCircle(Canvas canvas, PointF center, boolean animationFlag) {
         float radius = animationFlag ? signRadius : (getMeasuredWidth() / 6f) - dpToPx(2 * STROKE_WIDTH);
 
         canvas.drawCircle(center.x, center.y, radius, signPaint);
     }
 
-    private void drawCross(Canvas canvas, PointF center, boolean animationFlag) {
-        float l = animationFlag ? signRadius : (getMeasuredWidth() / 6f) - dpToPx(2 * STROKE_WIDTH);
+    /**
+     * Draws cross sign on the given canvas.
+     *
+     * @param canvas        Canvas on which the cross will be drawn.
+     * @param center        Center point of cross taken from {@link #centerPoints}.
+     * @param animationFlag Method takes the animated value for cross radius if set true, else
+     *                      takes default value.
+     */
 
-        canvas.drawLine(center.x - l, center.y - l, center.x + l, center.y + l, signPaint);
-        canvas.drawLine(center.x - l, center.y + l, center.x + l, center.y - l, signPaint);
+    private void drawCross(Canvas canvas, PointF center, boolean animationFlag) {
+        float radius = animationFlag ? signRadius : (getMeasuredWidth() / 6f) - dpToPx(2 * STROKE_WIDTH);
+
+        canvas.drawLine(center.x - radius, center.y - radius, center.x + radius, center.y + radius, signPaint);
+        canvas.drawLine(center.x - radius, center.y + radius, center.x + radius, center.y - radius, signPaint);
     }
+
+    /**
+     * Draws win line according to the {@link kapil.tictactoe.Constants.WinLinePosition} value
+     * stored in {@link #winLinePosition}.
+     *
+     * @param canvas Canvas on which the win line will be drawn.
+     */
 
     private void drawWinLine(Canvas canvas) {
         float length = winLineLength;
@@ -298,10 +369,20 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
                 canvas.drawLine(padding, padding, length - padding, length - padding, winLinePaint);
                 break;
             case Constants.DIAGONAL_2:
-                canvas.drawLine(getMeasuredWidth() - padding, padding, padding + getMeasuredWidth() - length, length - padding, winLinePaint);
+                canvas.drawLine(getMeasuredWidth() - padding, padding, padding + getMeasuredWidth()
+                        - length, length - padding, winLinePaint);
                 break;
         }
     }
+
+    /**
+     * This method is used to add a {@link kapil.tictactoe.Constants.Sign} to the board with
+     * {@link #clickAnimator}.
+     *
+     * @param sign   The sign to be added.
+     * @param row    Row index of sign.
+     * @param column Column index of sign.
+     */
 
     void addSignToBoard(@Constants.Sign int sign, int row, int column) {
         SignData signData = new SignData();
@@ -321,11 +402,40 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
         }, 50);
     }
 
+    /**
+     * Shows a win line across the board with {@link #winLineAnimator} according to the given win
+     * line position.
+     *
+     * @param winLinePosition Position where win line has to be drawn.
+     *                        One of {@link kapil.tictactoe.Constants.WinLinePosition}.
+     */
+
+    void showWinLine(@Constants.WinLinePosition int winLinePosition) {
+        this.winLinePosition = winLinePosition;
+
+        winLineAnimator.start();
+    }
+
+    /**
+     * Resets board with {@link #resetAnimator}.
+     */
+
     void resetBoard() {
         if (!resetAnimator.isRunning()) {
             resetAnimator.start();
         }
     }
+
+    /**
+     * Determines if a box is already occupied by a {@link kapil.tictactoe.Constants.Sign} or not
+     * according to the given row and column index.
+     *
+     * @param row    Row index of the box we want to check.
+     * @param column Column index of the box we want to check.
+     *
+     * @return true if there is an entry added for the given row and column index in
+     *         {@link #signDataList}, else false.
+     */
 
     boolean isAlreadyClicked(int row, int column) {
         for (int i = 0; i < signDataList.size(); i++) {
@@ -339,11 +449,13 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
         return false;
     }
 
-    public void showWinLine(@Constants.WinLinePosition int winLinePosition) {
-        this.winLinePosition = winLinePosition;
-
-        winLineAnimator.start();
-    }
+    /**
+     * Converts a value given in dp to it's corresponding value in pixels.
+     *
+     * @param dp The value to be converted, in dp, to pixels.
+     *
+     * @return The corresponding value of the given dp in pixels.
+     */
 
     private float dpToPx(float dp) {
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getContext().getResources().getDisplayMetrics());
@@ -389,17 +501,22 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
         return false;
     }
 
+    /**
+     * Determines the index of the box according to where it has been clicked.
+     *
+     * @param value Either x-coordinate or y-coordinate of clicked position.
+     *
+     * @return Either index of row if passed value is y-coordinate of clicked position or index of
+     *         column if passed value is x-coordinate of clicked position.
+     */
+
     private int detectIndexOfPartition(float value) {
         float maxValue = getMeasuredWidth();
-        float a = maxValue / 3;
+        float totalNumberOfPartitions = 3;
 
-        for (int i = 0; i < 3; i++) {
-            if ((value >= (i * a)) && (value <= ((i + 1) * a))) {
-                return i;
-            }
-        }
+        float lengthOfSinglePartition = maxValue / totalNumberOfPartitions;
 
-        return -1;
+        return (int) (value / lengthOfSinglePartition);
     }
 
     public void setOnBoardInteractionListener(OnBoardInteractionListener onBoardInteractionListener) {
@@ -454,6 +571,10 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
 
         void onSignAdded(@Constants.Sign int sign, int row, int column);
     }
+
+    /**
+     * Model class for holding sign data.
+     */
 
     private class SignData {
         private @Constants.Sign int sign;

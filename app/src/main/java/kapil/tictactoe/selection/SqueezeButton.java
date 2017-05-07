@@ -12,7 +12,7 @@ import android.view.View;
 import java.util.Calendar;
 
 /**
- *
+ * This is a custom button which gives visual feedback on touch or click.
  */
 
 public class SqueezeButton extends View implements ValueAnimator.AnimatorUpdateListener, Animator.AnimatorListener {

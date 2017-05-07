@@ -3,7 +3,7 @@ package kapil.tictactoe;
 import android.support.annotation.IntDef;
 
 /**
- * Created by witworks on 04/05/17.
+ * Holds all the constant values used by other classes.
  */
 
 public interface Constants {

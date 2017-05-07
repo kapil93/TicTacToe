@@ -8,10 +8,15 @@ import java.util.Random;
 
 import kapil.tictactoe.Constants;
 
+/**
+ * This class is responsible for playing the game of Tic Tac Toe on behalf of the computer and
+ * determining the result of the game.
+ */
+
 class Brain {
     private static Brain INSTANCE;
 
-    private int[][] board = new int[3][3];
+    private @Constants.Sign int[][] board = new int[3][3];
 
     private int rowOfResult;
     private int columnOfResult;
@@ -43,6 +48,12 @@ class Brain {
 
     }
 
+    /**
+     * This method ensures that only one instance of {@link Brain} exists.
+     *
+     * @return Instance of this class.
+     */
+
     static Brain getInstance() {
         if (INSTANCE == null) {
             INSTANCE = new Brain();
@@ -50,15 +61,29 @@ class Brain {
         return INSTANCE;
     }
 
-    void play(@Constants.Sign int sign) {
+    /**
+     * This method provides the row and column indices of the computer's move calculated by
+     * {@link #calculateNextMove(int, int)} through {@link OnProcessCompleteListener}.
+     */
+
+    void play() {
         if (onProcessCompleteListener == null) {
             return;
         }
 
-        calculateNextMove(sign, depth);
+        calculateNextMove(computerSign, depth);
 
         onProcessCompleteListener.onNextMoveCalculated(rowOfResult, columnOfResult);
     }
+
+    /**
+     * This method recursively calculates the next move of the computer.
+     *
+     * @param sign  {@link kapil.tictactoe.Constants.Sign} of computer.
+     * @param depth Total number of moves made by both players till now.
+     *
+     * @return Score for a given move. Used internally by the method to calculate the best move.
+     */
 
     private int calculateNextMove(@Constants.Sign int sign, int depth) {
 
@@ -81,7 +106,7 @@ class Brain {
                     scores.add(calculateNextMove(getOppositeSign(sign), depth + 1));
                     rowIndices.add(i);
                     columnIndices.add(j);
-                    board[i][j] = 0;
+                    board[i][j] = Constants.EMPTY;
                 }
             }
         }
@@ -106,6 +131,17 @@ class Brain {
         }
     }
 
+    /**
+     * Randomly selects a move from moves having score matching the given score.
+     *
+     * @param score         Score to be matched.
+     * @param scores        List of scores.
+     * @param rowIndices    List of indices of rows corresponding to scores list.
+     * @param columnIndices List of indices of columns corresponding to scores list.
+     *
+     * @return Randomized score from scores matching the given score.
+     */
+
     private int randomizeScore(int score, List<Integer> scores, List<Integer> rowIndices, List<Integer> columnIndices) {
         List<Integer> equalScoreIndices = new ArrayList<>();
 
@@ -123,6 +159,16 @@ class Brain {
 
         return score;
     }
+
+    /**
+     * Determines whether the given {@link kapil.tictactoe.Constants.Sign} won the game or not.
+     *
+     * @param sign             The sign to be checked for the win.
+     * @param notifyWinEnabled Flag to enable notification of the win through
+     *                         {@link #notifyWin(int, int, int)}.
+     *
+     * @return true if the given sign won, else false.
+     */
 
     private boolean isWin(@Constants.Sign int sign, boolean notifyWinEnabled) {
         for (int i = 0; i < 3; i++) {
@@ -171,6 +217,15 @@ class Brain {
         return false;
     }
 
+    /**
+     * Determines whether the given int arrays contain equal values.
+     *
+     * @param x int array.
+     * @param y int array.
+     *
+     * @return true if equal, else false.
+     */
+
     private boolean isEqual(int[] x, int[] y) {
         for (int i = 0; i < 3; i++) {
             if (x[i] != y[i]) {
@@ -179,6 +234,10 @@ class Brain {
         }
         return true;
     }
+
+    /**
+     * Analyzes the board for win of either players or draw.
+     */
 
     void analyzeBoard() {
         if (onProcessCompleteListener == null) {
@@ -189,6 +248,14 @@ class Brain {
             onProcessCompleteListener.onGameDraw();
         }
     }
+
+    /**
+     * Notify win of the given {@link kapil.tictactoe.Constants.Sign} through {@link OnProcessCompleteListener}.
+     *
+     * @param sign      The sign who has won.
+     * @param direction One of ROW, COLUMN OR DIAGONAL.
+     * @param index     Index of either ROW, COLUMN OR DIAGONAL.
+     */
 
     private void notifyWin(@Constants.Sign int sign, @DirectionOfWinLine int direction, int index) {
         if (onProcessCompleteListener == null) {
@@ -239,10 +306,14 @@ class Brain {
         onProcessCompleteListener.onGameWin(sign, winLinePosition);
     }
 
+    /**
+     * Resets the board.
+     */
+
     void reset() {
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                board[i][j] = 0;
+                board[i][j] = Constants.EMPTY;
             }
         }
         depth = 0;
@@ -252,6 +323,15 @@ class Brain {
         this.computerSign = computerSign;
         playerSign = getOppositeSign(computerSign);
     }
+
+    /**
+     * Update the board with the given {@link kapil.tictactoe.Constants.Sign}, row index and column
+     * index.
+     *
+     * @param sign   Sign to be placed.
+     * @param row    Row index of sign.
+     * @param column Column index of sign.
+     */
 
     void updateBoard(@Constants.Sign int sign, int row, int column) {
         board[row][column] = sign;
@@ -274,6 +354,12 @@ class Brain {
 
         void onGameDraw();
     }
+
+    /**
+     * Destroys the singleton instance of this class.
+     *
+     * To be called when the scope of this instance is intended to end.
+     */
 
     void destroy() {
         INSTANCE = null;

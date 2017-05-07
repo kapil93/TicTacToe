@@ -10,6 +10,13 @@ import kapil.tictactoe.Constants;
 import kapil.tictactoe.R;
 import kapil.tictactoe.game.GameActivity;
 
+/**
+ * This activity takes the user through the selection flow.
+ *
+ * {@link kapil.tictactoe.Constants.GameMode}, {@link kapil.tictactoe.Constants.Sign} and first turn
+ * are prompted for selection.
+ */
+
 public class SelectionActivity extends AppCompatActivity implements SelectionFragment.OnValueSelectedListener {
     private SelectionFragment modeSelectionFragment;
     private SelectionFragment signSelectionFragment;

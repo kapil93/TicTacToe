@@ -13,6 +13,10 @@ import android.widget.TextView;
 
 import kapil.tictactoe.R;
 
+/**
+ * This is a fragment for a single selection screen.
+ */
+
 public class SelectionFragment extends Fragment implements View.OnClickListener {
     private static final String TITLE_TEXT = "TITLE_TEXT";
     private static final String TOP_BUTTON_IMG_RES_ID = "TOP_BUTTON_IMG_RES_ID";
