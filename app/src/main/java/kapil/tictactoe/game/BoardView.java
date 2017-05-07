@@ -16,6 +16,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -393,6 +394,10 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
 
         signDataList.add(signData);
 
+        if (clickAnimator.isRunning()) {
+            clickAnimator.end();
+        }
+
         final Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
@@ -437,7 +442,7 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
      *         {@link #signDataList}, else false.
      */
 
-    boolean isAlreadyClicked(int row, int column) {
+    boolean isAlreadyAdded(int row, int column) {
         for (int i = 0; i < signDataList.size(); i++) {
             SignData signData = signDataList.get(i);
 
@@ -542,16 +547,19 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
 
     @Override
     public void onAnimationEnd(Animator animation) {
+        if (onBoardInteractionListener == null) {
+            return;
+        }
+
         if (animation == clickAnimator) {
             SignData signData = signDataList.get(signDataList.size() - 1);
             signData.setAnimationFlag(false);
-            if (onBoardInteractionListener != null) {
-                onBoardInteractionListener.onSignAdded(signData.getSign(), signData.getRow(), signData.getColumn());
-            }
+            onBoardInteractionListener.onSignAdded(signData.getSign(), signData.getRow(), signData.getColumn());
             signRadius = 0;
         } else if (animation == resetAnimator) {
             signDataList.clear();
             winLinePosition = Constants.NONE;
+            onBoardInteractionListener.onBoardReset();
         }
     }
 
@@ -570,6 +578,8 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
         void onBoardClick(BoardView board, int row, int column);
 
         void onSignAdded(@Constants.Sign int sign, int row, int column);
+
+        void onBoardReset();
     }
 
     /**

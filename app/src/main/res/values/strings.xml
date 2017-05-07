@@ -11,4 +11,5 @@
     <string name="player_turn_prompt">Your Turn</string>
     <string name="player_1_turn_prompt">Player 1 Turn</string>
     <string name="player_2_turn_prompt">Player 2 Turn</string>
+    <string name="processing_text">Thinking...</string>
 </resources>

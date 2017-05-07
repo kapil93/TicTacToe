@@ -4,6 +4,7 @@ import android.annotation.TargetApi;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -123,15 +124,8 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.reset_button:
-                board.resetBoard();
                 board.setOnBoardInteractionListener(GameActivity.this);
-
-                //noinspection WrongConstant
-                turn = getIntent().getIntExtra("FIRST_TURN", Constants.PLAYER_1);
-
-                setGameScreen();
-                makeFirstMove();
-                showBoardResetSnackBar();
+                board.resetBoard();
                 break;
         }
     }
@@ -150,7 +144,7 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
 
     @Override
     public void onBoardClick(BoardView board, int row, int column) {
-        if (board.isAlreadyClicked(row, column)) {
+        if (board.isAlreadyAdded(row, column)) {
             return;
         }
 
@@ -166,7 +160,15 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
 
                     toggleTurn();
 
-                    brain.play();
+                    turnTextBox.setText(R.string.processing_text);
+
+                    final Handler handler = new Handler();
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            brain.play();
+                        }
+                    }, 500);
                 }
 
                 break;
@@ -184,10 +186,20 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
 
                 toggleTurn();
 
+                brain.analyzeBoard();
+
                 break;
         }
+    }
 
-        brain.analyzeBoard();
+    @Override
+    public void onBoardReset() {
+        //noinspection WrongConstant
+        turn = getIntent().getIntExtra("FIRST_TURN", Constants.PLAYER_1);
+
+        setGameScreen();
+        makeFirstMove();
+        showBoardResetSnackBar();
     }
 
     /**
@@ -228,6 +240,7 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
         putSign(player2Sign, row, column);
         turnTextBox.setText(R.string.player_turn_prompt);
         toggleTurn();
+        brain.analyzeBoard();
     }
 
     @Override
