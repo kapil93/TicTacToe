@@ -13,10 +13,8 @@ import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.Shader;
 import android.os.Build;
-import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -38,7 +36,7 @@ import kapil.tictactoe.R;
  * board all with animations.
  */
 
-public class BoardView extends View implements GestureDetector.OnGestureListener, ValueAnimator.AnimatorUpdateListener, Animator.AnimatorListener {
+class BoardView extends View implements GestureDetector.OnGestureListener, ValueAnimator.AnimatorUpdateListener, Animator.AnimatorListener {
     private static final int STROKE_WIDTH = 10;
     private static final int SWEEPER_WIDTH = 20;
 
@@ -183,7 +181,7 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if ((onBoardInteractionListener == null) || (clickAnimator.isRunning()) || (isAnimationFlagSet())) {
+        if ((!isEnabled()) || (clickAnimator.isRunning()) || (isAnimationFlagSet())) {
             return super.onTouchEvent(event);
         } else {
             return clickDetector.onTouchEvent(event);
@@ -392,19 +390,12 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
         signData.setColumn(column);
         signData.setAnimationFlag(true);
 
-        signDataList.add(signData);
-
         if (clickAnimator.isRunning()) {
             clickAnimator.end();
         }
 
-        final Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                clickAnimator.start();
-            }
-        }, 50);
+        signDataList.add(signData);
+        clickAnimator.start();
     }
 
     /**
@@ -547,10 +538,6 @@ public class BoardView extends View implements GestureDetector.OnGestureListener
 
     @Override
     public void onAnimationEnd(Animator animation) {
-        if (onBoardInteractionListener == null) {
-            return;
-        }
-
         if (animation == clickAnimator) {
             SignData signData = signDataList.get(signDataList.size() - 1);
             signData.setAnimationFlag(false);

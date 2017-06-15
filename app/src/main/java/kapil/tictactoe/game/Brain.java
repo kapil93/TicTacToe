@@ -101,7 +101,7 @@ class Brain {
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                if (board[i][j] == 0) {
+                if (board[i][j] == Constants.EMPTY) {
                     board[i][j] = sign;
                     scores.add(calculateNextMove(getOppositeSign(sign), depth + 1));
                     rowIndices.add(i);
