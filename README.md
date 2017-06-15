@@ -9,7 +9,7 @@ For the calculation of next move Min-Max algorithm is used.
 
 <br>
 
-![Animation](app/src/main/res/assets/ttt.gif)
+![Animation](app/src/main/assets/ttt.gif)
 
 <br>
 
