@@ -24,6 +24,8 @@ import kapil.tictactoe.R;
  */
 
 public class GameActivity extends AppCompatActivity implements BoardView.OnBoardInteractionListener, Brain.OnProcessCompleteListener, View.OnClickListener {
+    private static final int BRAIN_RESPONSE_MANUAL_DELAY = 0;
+
     private Brain brain;
 
     private BoardView board;
@@ -173,7 +175,7 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
                         public void run() {
                             brain.play();
                         }
-                    }, 500);
+                    }, BRAIN_RESPONSE_MANUAL_DELAY);
 
                     board.setEnabled(false);
                 }
