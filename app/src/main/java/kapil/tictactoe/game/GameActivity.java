@@ -50,6 +50,11 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
         brain.setOnProcessCompleteListener(this);
 
         getValues();
+    }
+
+    @Override
+    public void onEnterAnimationComplete() {
+        super.onEnterAnimationComplete();
         setGameScreen();
         makeFirstMove();
     }
@@ -124,7 +129,7 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.reset_button:
-                board.setOnBoardInteractionListener(GameActivity.this);
+                board.setEnabled(false);
                 board.resetBoard();
                 break;
         }
@@ -169,6 +174,8 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
                             brain.play();
                         }
                     }, 500);
+
+                    board.setEnabled(false);
                 }
 
                 break;
@@ -196,6 +203,8 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
     public void onBoardReset() {
         //noinspection WrongConstant
         turn = getIntent().getIntExtra("FIRST_TURN", Constants.PLAYER_1);
+
+        board.setEnabled(true);
 
         setGameScreen();
         makeFirstMove();
@@ -240,6 +249,7 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
         putSign(player2Sign, row, column);
         turnTextBox.setText(R.string.player_turn_prompt);
         toggleTurn();
+        board.setEnabled(true);
         brain.analyzeBoard();
     }
 
@@ -262,14 +272,14 @@ public class GameActivity extends AppCompatActivity implements BoardView.OnBoard
             }
         }
 
-        board.setOnBoardInteractionListener(null);
+        board.setEnabled(false);
     }
 
     @Override
     public void onGameDraw() {
         turnTextBox.setText("");
         Toast.makeText(GameActivity.this, "Draw", Toast.LENGTH_SHORT).show();
-        board.setOnBoardInteractionListener(null);
+        board.setEnabled(false);
     }
 
     @Override
