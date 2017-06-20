@@ -36,7 +36,7 @@ import kapil.tictactoe.R;
  * board all with animations.
  */
 
-class BoardView extends View implements GestureDetector.OnGestureListener, ValueAnimator.AnimatorUpdateListener, Animator.AnimatorListener {
+public class BoardView extends View implements GestureDetector.OnGestureListener, ValueAnimator.AnimatorUpdateListener, Animator.AnimatorListener {
     private static final int STROKE_WIDTH = 10;
     private static final int SWEEPER_WIDTH = 20;
 

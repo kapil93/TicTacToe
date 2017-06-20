@@ -15,7 +15,7 @@ import java.util.Calendar;
  * This is a custom button which gives visual feedback on touch or click.
  */
 
-class SqueezeButton extends View implements ValueAnimator.AnimatorUpdateListener, Animator.AnimatorListener {
+public class SqueezeButton extends View implements ValueAnimator.AnimatorUpdateListener, Animator.AnimatorListener {
     private static final int MAX_CLICK_DURATION = 600;
 
     private ValueAnimator scaleIn;
